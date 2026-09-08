@@ -4,14 +4,16 @@ requires = [ "hatchling", "uv-dynamic-versioning" ]
 
 [project]
 name = "rqw"
-description = "SPARQL Endpoint interface, compatible with SPARQLWrapper."
+description = "SPARQL Endpoint Wrapper"
 readme = "README.md"
 keywords = [
+  "rdf",
+  "rdflib",
   "sparql",
 ]
 license = { text = "MIT" }
 authors = [ { name = "eggplants", email = "w10776e8w@yahoo.co.jp" } ]
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
@@ -19,14 +21,13 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Typing :: Typed",
 ]
 dynamic = [ "version" ]
-dependencies = []
+dependencies = [
+  "httpx>=0.28.1",
+]
 urls.Documentation = "https://eggplants.github.io/rqw/"
 urls.Issues = "https://github.com/eggplants/rqw/issues"
 urls.Repository = "https://github.com/eggplants/rqw"
@@ -37,6 +38,7 @@ dev = [
   "pymarkdownlnt>=0.9.33",
   "pyproject-fmt>=2.11.1",
   "pytest>=9.0.2",
+  "pytest-asyncio>=1.4",
   "pytest-cov>=7",
 ]
 docs = [
@@ -72,6 +74,9 @@ lint.per-file-ignores."packaging/entrypoint.py" = [
 lint.per-file-ignores."rqw/cli.py" = [
   "T201", # `print` found
 ]
+lint.per-file-ignores."rqw/client.py" = [
+  "PLR0913", # Too many arguments (every knob of an HTTP client is one keyword-only argument)
+]
 lint.per-file-ignores."tests/**" = [
   "ANN",     # Missing type annotations (tests/fixtures)
   "ARG",     # Unused arguments (pytest fixtures, lambda stubs)
@@ -81,6 +86,10 @@ lint.per-file-ignores."tests/**" = [
   "S101",    # Use of assert detected
 ]
 lint.pydocstyle.convention = "google"
+
+[tool.pytest]
+ini_options.asyncio_default_fixture_loop_scope = "function"
+ini_options.asyncio_mode = "auto"
 
 [tool.uv-dynamic-versioning]
 vcs = "git"

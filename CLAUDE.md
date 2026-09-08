@@ -47,9 +47,41 @@ Prefer a targeted `lint.per-file-ignores` entry with a comment over a scattered 
      what each one is responsible for. Name the invariants that are easy to break
      and the reason they exist -- that is the part that is not in the code. -->
 
+`httpx` is the only runtime dependency; RDF payloads are handed back as text and never parsed.
+
+- **`rqw/exceptions.py`** -- the `RqwError` hierarchy and `raise_for_status`, which maps an
+  HTTP status onto the exception the SPARQL protocol gives it. Imported by everything else.
+- **`rqw/terms.py`** -- `Uri`/`BlankNode`/`Literal`/`QuotedTriple` and the `xsd` decoders
+  behind `Literal.as_python`.
+- **`rqw/protocol.py`** -- `QueryForm`, result formats and `Accept` headers, `choose_format`,
+  and `build_request`, which turns an `EndpointConfig` plus a query into a `RequestSpec`.
+  Everything here is pure, and it has to stay that way: that is what lets the sync and the
+  async client share one implementation instead of drifting apart.
+- **`rqw/lexer.py`** -- the terminal productions [139]-[173] of [SPARQL 1.1][sparql] as one
+  alternation, ordered so the longest match wins. The order is load-bearing: the long string
+  forms before the short ones, `DOUBLE` before `DECIMAL` before `INTEGER`, and `IRIREF` before
+  the `<` operator. Reach for the spec before touching it.
+- **`rqw/parser.py`** -- `parse`, which takes a t-string or plain text and returns a `Query`
+  carrying its form and its rendered text. Interpolated values are rendered as whole RDF terms
+  and then checked to still occupy exactly one token; that check is the safety property, not
+  the escaping, so do not drop it when adding a value type to `render_value`. Only the lexical
+  grammar, the prologue, the form and delimiter nesting are validated -- the endpoint parses
+  the rest.
+- **`rqw/results.py`** -- the `QueryResult` union (`SelectResult`, `AskResult`, `GraphResult`,
+  `UpdateResult`), `RawResult`, the SPARQL JSON parsers, and `interpret`, which picks the
+  member a query form calls for.
+- **`rqw/client.py`** -- `SparqlClient` and `AsyncSparqlClient`, thin transport layers over
+  `protocol` and `results`. Each exposes a single `execute`, overloaded on `raw` so that
+  `raw=True` returns `RawResult` alone rather than widening the union -- keep the two
+  overloads and the implementation signature in step, and mirror any change in both clients.
+  `expect` adds one overload per form on top of that, so the six overloads have to stay in
+  step with `QueryForm`. Either accepts `client=` so callers (and the tests) can inject their
+  own `httpx` client, in which case closing it stays the caller's job.
 - **`rqw/__init__.py`** -- package version, read from the installed
-  distribution metadata (`0.0.0` when running from a source tree with no tags).
-- **`rqw/cli.py`** -- argparse entry point (`rqw`).
+  distribution metadata (`0.0.0` when running from a source tree with no tags), plus the
+  public re-exports.
+- **`rqw/cli.py`** -- argparse entry point (`rqw`). Flag names follow the `rqw` CLI that
+  SPARQLWrapper ships, so `-Q`/`-f`/`-F`/`-e`/`-m`/`-a`/`-u`/`-p`/`-q` keep their meaning.
   `main()` takes an optional argument list so the tests can drive it without touching `sys.argv`.
 - **`rqw/__main__.py`** -- makes `python -m rqw` work.
 
@@ -65,3 +97,9 @@ then reacts to `release: [published]` and does the PyPI and GHCR publish.
 
 Tests live in `tests/` and mirror the module split 1:1. `tests/**` has its own
 `lint.per-file-ignores` block, so assertions and missing annotations are fine there.
+
+Nothing in the suite touches the network: `tests/conftest.py` hands out an `httpx.MockTransport`
+wrapped in a `Recorder` that captures each outgoing request and replays a canned response.
+Inject it with `SparqlClient(..., client=sync_client)` and assert on `recorder.last`.
+
+[sparql]: https://www.w3.org/TR/sparql11-query/
