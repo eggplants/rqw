@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["master"]
+  push:
+    tags: ["*"]
+    branches: ["master"]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MISE_EXPERIMENTAL: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Drop the tools mise.toml marks as local-only
+        run: sed -i '/# \[skip ci\]/d' mise.toml
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - run: mise run ci
+      - uses: MishaKav/pytest-coverage-comment@432ac90e8d345c93e1d90ee0838b35913abc9c9b # v1.12.2
+        if: github.event_name == 'pull_request'
+        with:
+          pytest-coverage-path: ./pytest-coverage.txt
+          junitxml-path: ./pytest.xml
