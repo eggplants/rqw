@@ -21,9 +21,9 @@
 
             <h2>Contents</h2>
             <ul>
-  <li><a href="#sparql-endpoint-wrapper">SPARQL Endpoint Wrapper</a>
+  <li><a href="#rqw">rqw</a>
   <ul>
-    <li><a href="#installation">Installation</a></li>
+    <li><a href="#install">Install</a></li>
     <li><a href="#cli">CLI</a></li>
     <li><a href="#library">Library</a></li>
     <li><a href="#license">License</a></li>
@@ -578,62 +578,38 @@
                     <h1 class="modulename">
 rqw    </h1>
 
-                        <div class="docstring"><h1 id="sparql-endpoint-wrapper">SPARQL Endpoint Wrapper</h1>
+                        <div class="docstring"><h1 id="rqw">rqw</h1>
 
 <p><a href="https://pypi.org/project/rqw/
 "><img src="https://img.shields.io/pypi/v/rqw?color=blue
   " alt="PyPI" /></a> <a href="https://github.com/eggplants/rqw/actions/workflows/ci.yml
 "><img src="https://github.com/eggplants/rqw/actions/workflows/ci.yml/badge.svg
-  " alt="CI" /></a></p>
-
-<p><a href="https://github.com/eggplants/rqw/pkgs/container/rqw
+  " alt="CI" /></a> <a href="https://github.com/eggplants/rqw/pkgs/container/rqw
 "><img src="https://ghcr-badge.egpl.dev/eggplants/rqw/size
 " alt="ghcr size" /></a></p>
 
-<p>SPARQL Endpoint interface, inspired by <a href="https://github.com/RDFLib/sparqlwrapper">SPARQLWrapper</a>.</p>
+<p>SPARQL Endpoint interface, inspired by <a href="https://github.com/RDFLib/sparqlwrapper">SPARQLWrapper</a></p>
 
 <ul>
-<li><strong>One entry point, typed results.</strong> <code>execute()</code> reads the query form and
-answers with <code><a href="#SelectResult">SelectResult</a></code>, <code><a href="#AskResult">AskResult</a></code>, <code><a href="#GraphResult">GraphResult</a></code> or <code><a href="#UpdateResult">UpdateResult</a></code> --
-a union you <code>match</code> on, or narrow up front with <code>expect=</code>. Rows hold <code><a href="#Uri">Uri</a></code>,
-<code><a href="#BlankNode">BlankNode</a></code>, <code><a href="#Literal">Literal</a></code> or <code><a href="#QuotedTriple">QuotedTriple</a></code>, not nested <code>dict</code>s, and literals
-decode their own <code>xsd</code> datatype on request.</li>
-<li><strong>t-strings, parsed here.</strong> <code>execute(t"...")</code> renders each interpolated value
-as a complete RDF term and then proves it still occupies one token, so a value
-cannot end a literal early or start a comment. Queries are tokenized against
-the SPARQL 1.1 grammar before they are sent.</li>
-<li><strong>Typed errors.</strong> Every HTTP status the SPARQL protocol gives meaning to has
-its own exception, carrying the endpoint's own parser message.</li>
-<li><strong>Fast.</strong> One <code>httpx</code> connection pool per client, <code>asyncio</code> support, and no RDF
-parsing you did not ask for.</li>
-<li><strong>The query decides.</strong> <code><a href="">rqw</a></code> routes updates to the update endpoint on their
-own, picks <code>GET</code> or <code>POST</code> by URL length, and refuses a result format the
-query form cannot answer in before a single byte goes out.</li>
+<li>A typed result per query form, and a typed error per SPARQL HTTP status</li>
+<li>t-string queries, checked against <a href="https://www.w3.org/TR/sparql11-query/">the SPARQL 1.1 grammar</a></li>
+<li><code>httpx</code> only: one connection pool per client, <code>asyncio</code> support, no RDF parsing</li>
 </ul>
 
-<h2 id="installation">Installation</h2>
+<h2 id="install">Install</h2>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="c1"># mise via github release</span>
-mise<span class="w"> </span>use<span class="w"> </span>-g<span class="w"> </span>github:eggplants/rqw
-
-<span class="c1"># mise via pipx</span>
-mise<span class="w"> </span>use<span class="w"> </span>-g<span class="w"> </span>pipx:rqw
+<pre><span></span><code><span class="c1"># pip</span>
+pip<span class="w"> </span>install<span class="w"> </span>rqw
 
 <span class="c1"># pipx</span>
 pipx<span class="w"> </span>install<span class="w"> </span>rqw
 
-<span class="c1"># pip</span>
-pip<span class="w"> </span>install<span class="w"> </span>rqw
-</code></pre>
-</div>
+<span class="c1"># mise</span>
+mise<span class="w"> </span>use<span class="w"> </span>-g<span class="w"> </span>github:eggplants/rqw
 
-<h3 id="docker">Docker</h3>
-
-<div class="pdoc-code codehilite">
-<pre><span></span><code>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/eggplants/rqw
-
-docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>ghcr.io/eggplants/rqw<span class="w"> </span>-Q<span class="w"> </span><span class="s1">'SELECT * WHERE { ?s ?p ?o } LIMIT 1'</span>
+<span class="c1"># docker</span>
+docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/eggplants/rqw
 </code></pre>
 </div>
 
@@ -655,29 +631,38 @@ $ echo 'ASK { ?s ?p ?o }' | rqw -f -
 }
 </code></pre>
 
-<p><code>--help</code> lists the rest: <code>-F/--format</code>, <code>-m/--method</code>, <code>-a/--auth</code>, <code>-g/--default-graph</code>,
-<code>-H/--header</code>, <code>-P/--param</code>, <code>-t/--timeout</code>.</p>
+<p>Use <code>rqw --help</code> for more information.</p>
 
 <h2 id="library">Library</h2>
 
+<h3 id="overview">Overview</h3>
+
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rqw</span><span class="w"> </span><span class="kn">import</span> <span class="n">SelectResult</span><span class="p">,</span> <span class="n">SparqlClient</span>
+<pre><span></span><code><span class="c1"># sync</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rqw</span><span class="w"> </span><span class="kn">import</span> <span class="n">SelectResult</span><span class="p">,</span> <span class="n">SparqlClient</span>
 
 <span class="k">with</span> <span class="n">SparqlClient</span><span class="p">(</span><span class="s2">"https://dbpedia.org/sparql"</span><span class="p">)</span> <span class="k">as</span> <span class="n">sparql</span><span class="p">:</span>
-    <span class="k">match</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">        SELECT ?fish ?name WHERE {</span>
-<span class="s2">          ?fish a &lt;http://dbpedia.org/ontology/Fish&gt; ; rdfs:label ?name .</span>
-<span class="s2">          FILTER (lang(?name) = 'en')</span>
-<span class="s2">        } LIMIT 5</span>
-<span class="s2">    """</span><span class="p">):</span>
+    <span class="k">match</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT ?s ?p WHERE { ?s ?p ?o } LIMIT 5"</span><span class="p">):</span>
         <span class="k">case</span> <span class="n">SelectResult</span><span class="p">()</span> <span class="k">as</span> <span class="n">rows</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"fish"</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s2">"name"</span><span class="p">])</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"s"</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s2">"p"</span><span class="p">])</span>
+
+<span class="c1"># async</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rqw</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncSparqlClient</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncSparqlClient</span><span class="p">(</span><span class="s2">"https://dbpedia.org/sparql"</span><span class="p">)</span> <span class="k">as</span> <span class="n">sparql</span><span class="p">:</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span>
+            <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT * WHERE { ?s ?p ?o } LIMIT 10"</span><span class="p">),</span>
+            <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"ASK { ?s ?p ?o }"</span><span class="p">),</span>
+        <span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre>
 </div>
 
-<p><code>execute()</code> is the only way in. It reads the query form off the query itself and
-answers with the member of <code><a href="#QueryResult">QueryResult</a></code> that form calls for:</p>
+<p><code>execute()</code> is the only entry point. It reads the query form off the query and
+returns the matching member of <code><a href="#QueryResult">QueryResult</a></code>:</p>
 
 <table>
 <thead>
@@ -711,23 +696,38 @@ answers with the member of <code><a href="#QueryResult">QueryResult</a></code> t
 </tbody>
 </table>
 
+<h3 id="narrowing-with-expect">Narrowing with expect</h3>
+
+<p><code>expect</code> names the form the query must take. The return type follows, and any
+other form is refused before the request goes out:</p>
+
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="k">match</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
-    <span class="k">case</span> <span class="n">SelectResult</span><span class="p">()</span> <span class="k">as</span> <span class="n">rows</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">))</span>
-    <span class="k">case</span> <span class="n">AskResult</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">answer</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
-    <span class="k">case</span> <span class="n">GraphResult</span><span class="p">()</span> <span class="k">as</span> <span class="n">graph</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
-    <span class="k">case</span> <span class="n">UpdateResult</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+<pre><span></span><code><span class="n">rows</span> <span class="o">=</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">expect</span><span class="o">=</span><span class="n"><a href="#QueryForm.SELECT">QueryForm.SELECT</a></span><span class="p">)</span>   <span class="c1"># -&gt; SelectResult</span>
+<span class="n">answer</span> <span class="o">=</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">expect</span><span class="o">=</span><span class="n"><a href="#QueryForm.ASK">QueryForm.ASK</a></span><span class="p">)</span>    <span class="c1"># -&gt; AskResult</span>
+
+<span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"ASK { ?s ?p ?o }"</span><span class="p">,</span> <span class="n">expect</span><span class="o">=</span><span class="n"><a href="#QueryForm.SELECT">QueryForm.SELECT</a></span><span class="p">)</span>
+<span class="c1"># QueryFormError: expected a SELECT query, got ASK</span>
 </code></pre>
 </div>
 
-<p>Rows are mappings from variable name to term; a variable the query left unbound
-is simply absent, so <code>"name" in row</code> is the way to ask. Every term prints as
-itself, so <code>str(row["fish"])</code> always works -- but a term is one of four things,
-and reaching past <code>str</code> means saying which:</p>
+<h3 id="formats-and-raw-bodies">Formats and raw bodies</h3>
+
+<p><code>CONSTRUCT</code> and <code>DESCRIBE</code> are the only forms that leave the serialization open;
+the rest are read out of the SPARQL JSON results format. <code>raw=True</code> skips
+parsing and hands back a <code><a href="#RawResult">RawResult</a></code> in whatever format you ask for:</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DESCRIBE &lt;http://dbpedia.org/resource/Tuna&gt;"</span><span class="p">,</span> <span class="n">result_format</span><span class="o">=</span><span class="n"><a href="#GraphFormat.NTRIPLES">GraphFormat.NTRIPLES</a></span><span class="p">)</span>
+
+<span class="n">csv</span> <span class="o">=</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">result_format</span><span class="o">=</span><span class="n"><a href="#SolutionFormat.CSV">SolutionFormat.CSV</a></span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">csv</span><span class="o">.</span><span class="n">text</span>  <span class="c1"># 's,n\r\n...'</span>
+</code></pre>
+</div>
+
+<p>Asking for a format a form cannot answer in is a <code><a href="#QueryFormError">QueryFormError</a></code>, raised before
+the request goes out.</p>
+
+<h3 id="terms">Terms</h3>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rqw</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Uri</span>
@@ -738,16 +738,11 @@ and reaching past <code>str</code> means saying which:</p>
     <span class="k">case</span> <span class="n">Uri</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">uri</span><span class="p">):</span>
         <span class="o">...</span>
 
-<span class="k">match</span> <span class="n">row</span><span class="p">[</span><span class="s2">"count"</span><span class="p">]:</span>
-    <span class="k">case</span> <span class="n">Literal</span><span class="p">()</span> <span class="k">as</span> <span class="n">count</span><span class="p">:</span>
-        <span class="n">count</span><span class="o">.</span><span class="n">as_python</span><span class="p">()</span>  <span class="c1"># 42, from an xsd:integer literal</span>
+<span class="n">row</span><span class="p">[</span><span class="s2">"count"</span><span class="p">]</span><span class="o">.</span><span class="n">as_python</span><span class="p">()</span>  <span class="c1"># 42, from an xsd:integer literal</span>
 </code></pre>
 </div>
 
-<h3 id="t-strings">t-strings</h3>
-
-<p><code>execute</code> takes a <code>t"..."</code> template. Values interpolated into it are rendered as
-RDF terms -- quoted, escaped and typed -- never as query text:</p>
+<h3 id="t-stringshttpsdocspythonorg3referencelexical_analysishtmlt-strings-support"><a href="https://docs.python.org/3/reference/lexical_analysis.html#t-strings">t-strings</a> support</h3>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rqw</span><span class="w"> </span><span class="kn">import</span> <span class="n">Uri</span>
@@ -757,10 +752,6 @@ RDF terms -- quoted, escaped and typed -- never as query text:</p>
 <span class="c1"># sent as: SELECT ?s WHERE { &lt;http://example.org/a&gt; &lt;http://e/name&gt; "O\"Brien" }</span>
 </code></pre>
 </div>
-
-<p>SPARQL braces have to be doubled, because <code>{</code> is how a template marks an
-interpolation. That is the one piece of friction and there is no way around it:
-it is Python's own syntax.</p>
 
 <table>
 <thead>
@@ -801,14 +792,12 @@ it is Python's own syntax.</p>
 </tbody>
 </table>
 
-<p>A <code>str</code> becomes a literal, never an IRI, because that is the safe way round.
-Ask for the other reading explicitly with a format spec: <code>{value:iri}</code> for an
-IRI, <code>{value:var}</code> for a variable.</p>
+<p>A <code>str</code> becomes a literal, never an IRI. Ask for another reading with a format
+spec: <code>{value:iri}</code>, <code>{value:var}</code>.</p>
 
-<p>The safety does not rest on the escaping alone. After rendering, <code><a href="">rqw</a></code> tokenizes
-the whole query and checks that every value it spliced in still lines up with a
-token boundary, so a value that tried to break out of a literal is refused
-rather than sent:</p>
+<p>After rendering, the whole query is tokenized and every spliced value is checked
+to still line up with a token boundary, so a value that tried to break out of a
+literal is refused rather than sent:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">evil</span> <span class="o">=</span> <span class="s1">'" } INSERT DATA { &lt;a&gt; &lt;b&gt; "pwned'</span>
@@ -821,94 +810,8 @@ rather than sent:</p>
 </code></pre>
 </div>
 
-<p><code><a href="#parse">rqw.parse</a></code> gives you the same <code><a href="#Query">Query</a></code> on its own, which <code>execute</code> accepts
-directly when you want to send one query many times.</p>
-
-<h3 id="narrowing-with-expect">Narrowing with expect</h3>
-
-<p><code>expect</code> names the form the query must be written in. The return type follows,
-and a query of any other form is refused before the request goes out:</p>
-
-<div class="pdoc-code codehilite">
-<pre><span></span><code><span class="n">rows</span> <span class="o">=</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">expect</span><span class="o">=</span><span class="n"><a href="#QueryForm.SELECT">QueryForm.SELECT</a></span><span class="p">)</span>   <span class="c1"># -&gt; SelectResult</span>
-<span class="n">answer</span> <span class="o">=</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">expect</span><span class="o">=</span><span class="n"><a href="#QueryForm.ASK">QueryForm.ASK</a></span><span class="p">)</span>    <span class="c1"># -&gt; AskResult</span>
-<span class="n">graph</span> <span class="o">=</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">expect</span><span class="o">=</span><span class="n"><a href="#QueryForm.DESCRIBE">QueryForm.DESCRIBE</a></span><span class="p">,</span> <span class="n">result_format</span><span class="o">=</span><span class="n"><a href="#GraphFormat.NTRIPLES">GraphFormat.NTRIPLES</a></span><span class="p">)</span>
-
-<span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"ASK { ?s ?p ?o }"</span><span class="p">,</span> <span class="n">expect</span><span class="o">=</span><span class="n"><a href="#QueryForm.SELECT">QueryForm.SELECT</a></span><span class="p">)</span>
-<span class="c1"># QueryFormError: expected a SELECT query, got ASK</span>
-</code></pre>
-</div>
-
-<h3 id="what-is-checked-before-sending">What is checked before sending</h3>
-
-<p>The query is tokenized against the terminal productions of <code>SPARQL 1.1
-&lt;https://www.w3.org/TR/sparql11-query/&gt;</code>, which catches an unterminated literal,
-a stray character, an unbalanced <code>{}</code>, <code>()</code> or <code>[]</code>, a malformed <code>BASE</code> or
-<code>PREFIX</code>, and text that names no query form. Everything past that -- whether the
-<code>WHERE</code> clause makes sense, whether a function takes those arguments -- is left
-to the endpoint, which has to parse the query anyway.</p>
-
-<h3 id="formats-and-taking-the-body-unparsed">Formats, and taking the body unparsed</h3>
-
-<p><code>CONSTRUCT</code> and <code>DESCRIBE</code> are the only forms that leave the serialization open,
-since the rest are read out of the SPARQL JSON results format:</p>
-
-<div class="pdoc-code codehilite">
-<pre><span></span><code><span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DESCRIBE &lt;http://dbpedia.org/resource/Tuna&gt;"</span><span class="p">,</span> <span class="n">result_format</span><span class="o">=</span><span class="n"><a href="#GraphFormat.NTRIPLES">GraphFormat.NTRIPLES</a></span><span class="p">)</span>
-</code></pre>
-</div>
-
-<p><code>raw=True</code> skips parsing entirely and hands back a <code><a href="#RawResult">RawResult</a></code> -- one type, no
-union to narrow -- in whatever format you ask for:</p>
-
-<div class="pdoc-code codehilite">
-<pre><span></span><code><span class="n">csv</span> <span class="o">=</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">result_format</span><span class="o">=</span><span class="n"><a href="#SolutionFormat.CSV">SolutionFormat.CSV</a></span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">csv</span><span class="o">.</span><span class="n">text</span>          <span class="c1"># 's,n\r\n...'</span>
-<span class="n">turtle</span> <span class="o">=</span> <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"CONSTRUCT { } WHERE { }"</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>  <span class="c1"># feed it to rdflib</span>
-</code></pre>
-</div>
-
-<p>Asking for a format a form cannot answer in is a <code><a href="#QueryFormError">QueryFormError</a></code>, raised before
-the request goes out -- <code>result_format=SolutionFormat.CSV</code> without <code>raw=True</code>
-does not even type-check.</p>
-
-<h3 id="asyncio">asyncio</h3>
-
-<p><code><a href="#AsyncSparqlClient">AsyncSparqlClient</a></code> has the same surface with <code>execute</code> awaitable. Queries sent
-through one client share its connection pool, so <code>gather</code> really does run them
-at once.</p>
-
-<div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">rqw</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncSparqlClient</span>
-
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncSparqlClient</span><span class="p">(</span><span class="s2">"https://dbpedia.org/sparql"</span><span class="p">)</span> <span class="k">as</span> <span class="n">sparql</span><span class="p">:</span>
-        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span>
-            <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT * WHERE { ?s ?p ?o } LIMIT 10"</span><span class="p">),</span>
-            <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"ASK { ?s ?p ?o }"</span><span class="p">),</span>
-        <span class="p">)</span>
-
-<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
-</code></pre>
-</div>
-
-<h3 id="errors">Errors</h3>
-
-<div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rqw</span><span class="w"> </span><span class="kn">import</span> <span class="n">BadQueryError</span><span class="p">,</span> <span class="n">EndpointError</span><span class="p">,</span> <span class="n">SparqlHttpError</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT ?s WHERE {"</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">BadQueryError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>  <span class="c1"># 400, the endpoint's own parser message</span>
-</code></pre>
-</div>
-
-<p><code><a href="#BadQueryError">BadQueryError</a></code>, <code><a href="#UnauthorizedError">UnauthorizedError</a></code>, <code><a href="#ForbiddenError">ForbiddenError</a></code>, <code><a href="#EndpointNotFoundError">EndpointNotFoundError</a></code>,
-<code><a href="#UriTooLongError">UriTooLongError</a></code>, <code><a href="#UnsupportedMediaTypeError">UnsupportedMediaTypeError</a></code> and <code><a href="#EndpointError">EndpointError</a></code> all derive from
-<code><a href="#SparqlHttpError">SparqlHttpError</a></code>, and everything <code><a href="">rqw</a></code> raises derives from <code><a href="#RqwError">RqwError</a></code>.</p>
+<p><code><a href="#parse">rqw.parse</a></code> gives the same <code><a href="#Query">Query</a></code> on its own, which <code>execute</code> accepts directly
+when you send one query many times.</p>
 
 <h3 id="endpoint-settings">Endpoint settings</h3>
 
@@ -927,8 +830,24 @@ at once.</p>
 </code></pre>
 </div>
 
-<p>Passing <code>client=httpx.Client(...)</code> swaps in your own transport, retries and
-proxies; <code><a href="">rqw</a></code> then leaves closing it to you.</p>
+<p>Passing <code>client=httpx.Client(...)</code> swaps in your own transport; closing it then
+stays your job.</p>
+
+<h3 id="errors">Errors</h3>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rqw</span><span class="w"> </span><span class="kn">import</span> <span class="n">BadQueryError</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">sparql</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT ?s WHERE {"</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">BadQueryError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>  <span class="c1"># 400, the endpoint's own parser message</span>
+</code></pre>
+</div>
+
+<p><code><a href="#BadQueryError">BadQueryError</a></code>, <code><a href="#UnauthorizedError">UnauthorizedError</a></code>, <code><a href="#ForbiddenError">ForbiddenError</a></code>, <code><a href="#EndpointNotFoundError">EndpointNotFoundError</a></code>,
+<code><a href="#UriTooLongError">UriTooLongError</a></code>, <code><a href="#UnsupportedMediaTypeError">UnsupportedMediaTypeError</a></code> and <code><a href="#EndpointError">EndpointError</a></code> derive from
+<code><a href="#SparqlHttpError">SparqlHttpError</a></code>; everything <code><a href="">rqw</a></code> raises derives from <code><a href="#RqwError">RqwError</a></code>.</p>
 
 <h2 id="license">License</h2>
 
@@ -1035,7 +954,7 @@ proxies; <code><a href="">rqw</a></code> then leaves closing it to you.</p>
                 <section id="USER_AGENT">
                     <div class="attr variable">
             <span class="name">USER_AGENT</span>        =
-<span class="default_value">&#39;rqw/0.0.0.post1+17e1b10 (+https://github.com/eggplants/rqw)&#39;</span>
+<span class="default_value">&#39;rqw/0.0.0.post1+e13b142 (+https://github.com/eggplants/rqw)&#39;</span>
 
         
     </div>
@@ -4103,7 +4022,7 @@ error of a malformed query in there.</li>
                 <section id="__version__">
                     <div class="attr variable">
             <span class="name">__version__</span>        =
-<span class="default_value">&#39;0.0.0.post1+17e1b10&#39;</span>
+<span class="default_value">&#39;0.0.0.post1+e13b142&#39;</span>
 
         
     </div>
