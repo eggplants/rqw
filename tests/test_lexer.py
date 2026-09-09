@@ -128,7 +128,7 @@ def test_the_error_carries_the_position():
 
 def test_codepoint_escapes_are_resolved_before_parsing():
     assert unescape_codepoints(r"<ab\u00E9xy>") == "<abéxy>"
-    assert unescape_codepoints(r"\u03B1:a") == "\u03b1:a"  # noqa: RUF001 -- the spec's own example
+    assert unescape_codepoints(r"\u03B1:a") == "\u03b1:a"
     assert unescape_codepoints(r"a\u003Ab") == "a:b"
     assert unescape_codepoints(r"\U0001F600") == "😀"
 
