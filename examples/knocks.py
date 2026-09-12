@@ -14,8 +14,15 @@ from rqw import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-DBPEDIA_JA = "https://ja.dbpedia.org/sparql"
+DBPEDIA_JA = "https://ja-dbpedia.egpl.dev/sparql"
 NDLA = "http://id.ndl.go.jp/auth/ndla/sparql"
+
+NO_BIF = "bif:* is a Virtuoso extension, and the mirror runs Oxigraph"
+TIME_LIMIT = "the mirror cancels a query after 20 seconds, and this one needs longer"
+BUILT_IRI_JOIN = (
+    "on the mirror, joining a pattern with an IRI built by IRI() costs seconds per IRI rather than an index"
+    " lookup, and this one builds hundreds of them"
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -40,12 +47,12 @@ def _quine(knock: Knock, result: QueryResult) -> str:
 
 
 _QUINE_HEAD = (
-    "SELECT (REPLACE(REPLACE(?s, SUBSTR(?etc, 216, 1), SUBSTR(?etc, 245, 1)), "
-    "SUBSTR(?etc, 74, 1), ?s) AS ?query) WHERE { "
+    "SELECT (REPLACE(REPLACE(?s, SUBSTR(STR(?etc), 216, 1), SUBSTR(STR(?etc), 245, 1)), "
+    "SUBSTR(STR(?etc), 74, 1), ?s) AS ?query) WHERE { "
     "<http://ja.dbpedia.org/resource/D.C.P.S._〜ダ・カーポ〜_プラスシチュエーション> "
     "<http://ja.dbpedia.org/property/etc> ?etc . } "
 )
-QUINE = f"""{_QUINE_HEAD}GROUP BY ('{_QUINE_HEAD}GROUP BY ("&" AS ?s)' AS ?s)"""
+QUINE = f"""{_QUINE_HEAD}GROUP BY ?etc ('{_QUINE_HEAD}GROUP BY ?etc ("&" AS ?s)' AS ?s)"""
 
 
 KNOCKS: tuple[Knock, ...] = (
@@ -70,6 +77,7 @@ WHERE {
   }
 }
 """,
+        xfail=TIME_LIMIT,
     ),
     Knock(
         no=3,
@@ -96,6 +104,7 @@ WHERE {
         no=5,
         title="Fetch the resources whose value falls in a range, with FILTER",
         query="""
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 SELECT *
 WHERE {
   ?s <http://ja.dbpedia.org/property/生年> ?date .
@@ -194,11 +203,13 @@ WHERE {
 }
 ORDER BY ?labelArticle
 """,
+        xfail=TIME_LIMIT,
     ),
     Knock(
         no=13,
         title="List the prefectures",
         query="""
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX dcterms: <http://purl.org/dc/terms/>
 SELECT ?pref ?code
 WHERE {
@@ -320,7 +331,8 @@ WHERE {
         query="""
 SELECT ?s
 WHERE {
-  ?s ^<http://dbpedia.org/ontology/wikiPageWikiLink> <http://ja.dbpedia.org/resource/日本の山一覧> .
+  <http://ja.dbpedia.org/resource/Category:日本の山>
+    ^<http://www.w3.org/2004/02/skos/core#broader>/^<http://purl.org/dc/terms/subject> ?s .
 }
 """,
     ),
@@ -363,6 +375,7 @@ WHERE {
 GROUP BY ?prefix
 ORDER BY DESC(?num)
 """,
+        xfail=TIME_LIMIT,
     ),
     Knock(
         no=25,
@@ -405,9 +418,10 @@ ORDER BY DESC (count(?person))
 SELECT ?family (COUNT(?family) AS ?count)
 WHERE {
   ?s a <http://dbpedia.org/ontology/Person>;
-     <http://dbpedia.org/ontology/nationality> <http://ja.dbpedia.org/resource/日本> ;
+     <http://ja.dbpedia.org/property/国籍> ?nationality ;
      <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
-  BIND (REPLACE(?comment, "([・(（]|は、|は日本).*$", "") AS ?family)
+  VALUES ?nationality { <http://ja.dbpedia.org/resource/日本> "日本"@ja }
+  BIND (REPLACE(?comment, "([・(（ ]|は、|は日本).*$", "") AS ?family)
   FILTER (STRLEN(?family) > 0)
 }
 GROUP BY ?family
@@ -462,10 +476,11 @@ ORDER BY DESC(COUNT(?s))
 SELECT ?s ?name (COUNT(DISTINCT(?ideology)) AS ?count)
   (GROUP_CONCAT(DISTINCT ?ideology; separator=", ") AS ?ideologies)
 WHERE {
-  ?s <http://dbpedia.org/ontology/ideology>|<http://ja.dbpedia.org/property/政治的思想・立場> ?i ;
+  ?s <http://ja.dbpedia.org/property/政治的思想・立場> ?i ;
      <http://www.w3.org/2000/01/rdf-schema#label> ?name .
   ?i <http://www.w3.org/2000/01/rdf-schema#label> ?ideology .
 }
+GROUP BY ?s ?name
 ORDER BY DESC(COUNT(DISTINCT(?ideology)))
 """,
     ),
@@ -479,7 +494,7 @@ WHERE {
   ?s a <http://dbpedia.org/ontology/Mountain> ;
      <http://dbpedia.org/ontology/address> ?address ;
      <http://www.w3.org/2000/01/rdf-schema#label> ?name ;
-     ^<http://dbpedia.org/ontology/wikiPageWikiLink> <http://ja.dbpedia.org/resource/日本の山一覧> .
+     <http://purl.org/dc/terms/subject>/<http://www.w3.org/2004/02/skos/core#broader> <http://ja.dbpedia.org/resource/Category:日本の山> .
   BIND (REPLACE(STR(REPLACE(?address, "([（）]|藤津郡太良町・)", "")), "(京都府|[都道府県]).*$", "$1") AS ?pref)
   FILTER (REGEX(?pref, "[都道府県]"))
   FILTER (!REGEX(?pref, "(同県|小県)"))
@@ -512,7 +527,7 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
 SELECT *
 WHERE {
-  ?s ex:member/rdf:rest{2}/rdf:first ?o .
+  ?s ex:member/rdf:rest/rdf:rest/rdf:first ?o .
 }
 """,
         allow_empty=True,
@@ -530,6 +545,7 @@ WHERE {
   <http://ja.dbpedia.org/resource/Category:アニメ> ^skos:broader+ ?category .
 }
 """,
+        xfail=TIME_LIMIT,
     ),
     Knock(
         no=35,
@@ -551,14 +567,14 @@ WHERE {
         query="""
 SELECT DISTINCT ?p1 ?p2
 WHERE {
-  ?work1 <http://dbpedia.org/ontology/starring> ?p1 ;
-         <http://dbpedia.org/ontology/starring> ?p2 .
-  ?work2 <http://dbpedia.org/ontology/starring> ?p1 ;
-         <http://dbpedia.org/ontology/starring> ?p2 .
-  ?work3 <http://dbpedia.org/ontology/starring> ?p1 ;
-         <http://dbpedia.org/ontology/starring> ?p2 .
-  ?work4 <http://dbpedia.org/ontology/starring> ?p1 ;
-         <http://dbpedia.org/ontology/starring> ?p2 .
+  ?work1 <http://ja.dbpedia.org/property/出演者> ?p1 ;
+         <http://ja.dbpedia.org/property/出演者> ?p2 .
+  ?work2 <http://ja.dbpedia.org/property/出演者> ?p1 ;
+         <http://ja.dbpedia.org/property/出演者> ?p2 .
+  ?work3 <http://ja.dbpedia.org/property/出演者> ?p1 ;
+         <http://ja.dbpedia.org/property/出演者> ?p2 .
+  ?work4 <http://ja.dbpedia.org/property/出演者> ?p1 ;
+         <http://ja.dbpedia.org/property/出演者> ?p2 .
   ?p1 <http://ja.dbpedia.org/property/production> <http://ja.dbpedia.org/resource/ジャニーズ事務所> .
   FILTER (?work1 != ?work2)
   FILTER (?work1 != ?work3)
@@ -576,14 +592,14 @@ WHERE {
         query="""
 SELECT DISTINCT ?pp1 ?pp2
 WHERE {
-  ?work1 <http://dbpedia.org/ontology/starring> ?p1 ;
-         <http://dbpedia.org/ontology/starring> ?p2 .
-  ?work2 <http://dbpedia.org/ontology/starring> ?p1 ;
-         <http://dbpedia.org/ontology/starring> ?p2 .
-  ?work3 <http://dbpedia.org/ontology/starring> ?p1 ;
-         <http://dbpedia.org/ontology/starring> ?p2 .
-  ?work4 <http://dbpedia.org/ontology/starring> ?p1 ;
-         <http://dbpedia.org/ontology/starring> ?p2 .
+  ?work1 <http://ja.dbpedia.org/property/出演者> ?p1 ;
+         <http://ja.dbpedia.org/property/出演者> ?p2 .
+  ?work2 <http://ja.dbpedia.org/property/出演者> ?p1 ;
+         <http://ja.dbpedia.org/property/出演者> ?p2 .
+  ?work3 <http://ja.dbpedia.org/property/出演者> ?p1 ;
+         <http://ja.dbpedia.org/property/出演者> ?p2 .
+  ?work4 <http://ja.dbpedia.org/property/出演者> ?p1 ;
+         <http://ja.dbpedia.org/property/出演者> ?p2 .
   ?p1 <http://ja.dbpedia.org/property/production> <http://ja.dbpedia.org/resource/ジャニーズ事務所> .
   FILTER (?work1 NOT IN (?work2, ?work3, ?work4))
   FILTER (?work2 NOT IN (?work3, ?work4))
@@ -604,6 +620,7 @@ WHERE {
 }
 LIMIT 10
 """,
+        xfail=NO_BIF,
     ),
     Knock(
         no=39,
@@ -611,10 +628,10 @@ LIMIT 10
         query="""
 SELECT ?line ?stations
 WHERE {
-  <http://ja.dbpedia.org/resource/秋葉原駅> <http://dbpedia.org/ontology/servingRailwayLine> ?line .
-  ?stations <http://dbpedia.org/ontology/servingRailwayLine> ?line .
+  <http://ja.dbpedia.org/resource/秋葉原駅> <http://ja.dbpedia.org/property/所属路線> ?line .
+  ?stations <http://ja.dbpedia.org/property/所属路線> ?line .
 }
-ORDER BY (RAND(1 + STRLEN(?stations)*0))
+ORDER BY RAND()
 LIMIT 1
 """,
     ),
@@ -648,7 +665,7 @@ WHERE {
       ?mount a <http://dbpedia.org/ontology/Mountain> ;
          <http://dbpedia.org/ontology/address> ?address ;
          <http://www.w3.org/2000/01/rdf-schema#label> ?name ;
-         ^<http://dbpedia.org/ontology/wikiPageWikiLink> <http://ja.dbpedia.org/resource/日本の山一覧> .
+         <http://purl.org/dc/terms/subject>/<http://www.w3.org/2004/02/skos/core#broader> <http://ja.dbpedia.org/resource/Category:日本の山> .
       BIND (REPLACE(STR(REPLACE(?address, "([（）]|藤津郡太良町・)", "")), "(京都府|[都道府県]).*$", "$1") AS ?pref)
       FILTER (REGEX(?pref, "[都道府県]"))
       FILTER (!REGEX(?pref, "(同県|小県)"))
@@ -665,6 +682,7 @@ ORDER BY DESC(COUNT(?mount))
         no=42,
         title="Build IRIs dynamically",
         query="""
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 SELECT DISTINCT ?nameProp ?name
 WHERE {
   ?location ?nameProp ?name .
@@ -677,15 +695,16 @@ WHERE {
   }
 }
 """,
+        xfail=TIME_LIMIT,
     ),
     Knock(
         no=43,
         title="Fetch the anime works about sports",
         query="""
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX dcterms: <http://purl.org/dc/terms/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX dbpedia-owl: <http://dbpedia.org/ontology/>
-PREFIX dbpedia-ja: <http://ja.dbpedia.org/resource/>
+PREFIX category-ja: <http://ja.dbpedia.org/resource/Category:>
 
 SELECT DISTINCT ?title ?category
 WHERE {
@@ -696,41 +715,43 @@ WHERE {
     SELECT ?category
     WHERE {
       {
-        dbpedia-ja:スポーツ競技一覧 dbpedia-owl:wikiPageWikiLink/rdfs:label ?label .
-        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:"^^xsd:string, ?label, "アニメ"^^xsd:string)) AS ?category)
+        ?sport dcterms:subject category-ja:オリンピック競技 ; rdfs:label ?label .
+        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:"^^xsd:string, REPLACE(?label, " ", "_"), "アニメ"^^xsd:string)) AS ?category)
       } UNION {
-        dbpedia-ja:スポーツ競技一覧 dbpedia-owl:wikiPageWikiLink/rdfs:label ?label .
-        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:男子"^^xsd:string, ?label, "アニメ"^^xsd:string)) AS ?category)
+        ?sport dcterms:subject category-ja:オリンピック競技 ; rdfs:label ?label .
+        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:男子"^^xsd:string, REPLACE(?label, " ", "_"), "アニメ"^^xsd:string)) AS ?category)
       } UNION {
-        dbpedia-ja:スポーツ競技一覧 dbpedia-owl:wikiPageWikiLink/rdfs:label ?label .
-        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:女子"^^xsd:string, ?label, "アニメ"^^xsd:string)) AS ?category)
+        ?sport dcterms:subject category-ja:オリンピック競技 ; rdfs:label ?label .
+        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:女子"^^xsd:string, REPLACE(?label, " ", "_"), "アニメ"^^xsd:string)) AS ?category)
       } UNION {
-        dbpedia-ja:スポーツ競技一覧 dbpedia-owl:wikiPageWikiLink/rdfs:label ?label .
-        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:"^^xsd:string, ?label, "を題材とした作品"^^xsd:string)) AS ?category)
+        ?sport dcterms:subject category-ja:オリンピック競技 ; rdfs:label ?label .
+        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:"^^xsd:string, REPLACE(?label, " ", "_"), "を題材とした作品"^^xsd:string)) AS ?category)
       } UNION {
-        dbpedia-ja:スポーツ競技一覧 dbpedia-owl:wikiPageWikiLink/rdfs:label ?label .
-        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:男子"^^xsd:string, ?label, "を題材とした作品"^^xsd:string)) AS ?category)
+        ?sport dcterms:subject category-ja:オリンピック競技 ; rdfs:label ?label .
+        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:男子"^^xsd:string, REPLACE(?label, " ", "_"), "を題材とした作品"^^xsd:string)) AS ?category)
       } UNION {
-        dbpedia-ja:スポーツ競技一覧 dbpedia-owl:wikiPageWikiLink/rdfs:label ?label .
-        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:女子"^^xsd:string, ?label, "を題材とした作品"^^xsd:string)) AS ?category)
+        ?sport dcterms:subject category-ja:オリンピック競技 ; rdfs:label ?label .
+        BIND (IRI(CONCAT("http://ja.dbpedia.org/resource/Category:女子"^^xsd:string, REPLACE(?label, " ", "_"), "を題材とした作品"^^xsd:string)) AS ?category)
       }
     }
   }
 }
 """,
+        xfail=BUILT_IRI_JOIN,
     ),
     Knock(
         no=44,
         title="Build IRIs from the cross product of several patterns",
         query="""
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX dbpedia-owl: <http://dbpedia.org/ontology/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX category-ja: <http://ja.dbpedia.org/resource/Category:>
 
 SELECT (IRI(
-  CONCAT("http://ja.dbpedia.org/resource/Category:", ?x, ?label, ?y)
+  CONCAT("http://ja.dbpedia.org/resource/Category:", ?x, REPLACE(?label, " ", "_"), ?y)
  ) AS ?category)
 WHERE {
- <http://ja.dbpedia.org/resource/スポーツ競技一覧> dbpedia-owl:wikiPageWikiLink/rdfs:label ?label .
+ ?sport dcterms:subject category-ja:オリンピック競技 ; rdfs:label ?label .
  VALUES ?x {"" "男子" "女子"}
  VALUES ?y {"アニメ" "を題材とした作品"}
 }
@@ -741,25 +762,26 @@ WHERE {
         title="Fetch the anime works about sports (using the method of knock 44)",
         query="""
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX dbpedia-owl: <http://dbpedia.org/ontology/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX category-ja: <http://ja.dbpedia.org/resource/Category:>
 SELECT DISTINCT ?title ?category
 WHERE {
-  ?s <http://purl.org/dc/terms/subject> ?category, ?categories ;
+  ?s dcterms:subject ?category, ?categories ;
      rdfs:label ?title .
      FILTER CONTAINS(STR(?categories), "アニメ")
   {
     SELECT (IRI(
-      CONCAT("http://ja.dbpedia.org/resource/Category:", ?x, ?label, ?y)
+      CONCAT("http://ja.dbpedia.org/resource/Category:", ?x, REPLACE(?label, " ", "_"), ?y)
      ) AS ?category)
     WHERE {
-      <http://ja.dbpedia.org/resource/スポーツ競技一覧> dbpedia-owl:wikiPageWikiLink/rdfs:label ?label .
+      ?sport dcterms:subject category-ja:オリンピック競技 ; rdfs:label ?label .
       VALUES ?x {"" "男子" "女子"}
       VALUES ?y {"アニメ" "を題材とした作品"}
     }
   }
 }
 """,
-        xfail="as the text says, the estimated execution time exceeds the DBpedia Japanese limit (500 seconds)",
+        xfail=BUILT_IRI_JOIN,
     ),
     Knock(
         no=46,
@@ -774,20 +796,22 @@ SELECT
 WHERE {?s ?p ?o}
 LIMIT 1
 """,
+        xfail=NO_BIF,
     ),
     Knock(
         no=47,
         title="Fizz Buzz",
         query="""
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 SELECT ?out
 WHERE {
   ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
-  BIND (xsd:integer(?label) AS ?num)
+  BIND (xsd:integer(STR(?label)) AS ?num)
   FILTER (REGEX(?label, "^\\\\d+$") && ?num > 0)
-  BIND (CONCAT(IF(?num / 3 * 3 = ?num, "Fizz", ""), IF(?num / 5 * 5 = ?num, "Buzz", "")) AS ?str)
+  BIND (CONCAT(IF(FLOOR(?num / 3) * 3 = ?num, "Fizz", ""), IF(FLOOR(?num / 5) * 5 = ?num, "Buzz", "")) AS ?str)
   BIND (IF(STRLEN(?str) = 0, ?num, ?str) AS ?out)
 }
-GROUP BY ?num
+GROUP BY ?num ?out
 ORDER BY ASC(?num)
 LIMIT 100
 """,
@@ -804,7 +828,7 @@ WHERE {
 }
 LIMIT 100
 """,
-        xfail="the public endpoint refuses bif:sequence_next/bif:sequence_set under its security restrictions (needs your own Virtuoso)",
+        xfail=NO_BIF,
     ),
     Knock(
         no=49,
@@ -825,7 +849,7 @@ WHERE {
   BIND (bif:exec(?sql, ?state, ?message, bif:vector(), 3, ?meta, ?rows) AS ?exec)
 } LIMIT 1
 """,
-        xfail="the public endpoint refuses bif:exec under its security restrictions (needs your own Virtuoso)",
+        xfail=NO_BIF,
     ),
     Knock(
         no=50,

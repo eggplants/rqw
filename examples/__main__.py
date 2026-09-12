@@ -3,30 +3,36 @@
 from __future__ import annotations
 
 import argparse
-import asyncio
+import secrets
 import sys
 import time
-from contextlib import AsyncExitStack
+from contextlib import ExitStack
 from dataclasses import dataclass
 from enum import Enum
+from http import HTTPStatus
 from typing import TYPE_CHECKING
 
 import httpx
-from knocks import DBPEDIA_JA, KNOCKS, Knock
+from knocks import KNOCKS, Knock
 
 from rqw import (
     AskResult,
-    AsyncSparqlClient,
     GraphResult,
     QueryResult,
     RqwError,
     SelectResult,
+    SparqlClient,
     SparqlHttpError,
     UpdateResult,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
+
+# The mirror answers `429` with `Retry-After: 60` once too many queries without a LIMIT (or with an aggregate
+# or a regex) went through in a short time, and most knocks are of that kind.
+RATE_LIMIT_PAUSE = 60.0
+RATE_LIMIT_RETRIES = 3
 
 
 class Status(Enum):
@@ -80,25 +86,43 @@ def _reason(error: Exception) -> str:
     return f"{type(error).__name__}: {' '.join(str(error).split())[:110]}"
 
 
-async def solve(knock: Knock, client: AsyncSparqlClient, gate: asyncio.Semaphore) -> Outcome:
+def throw(client: SparqlClient, knock: Knock) -> QueryResult:
+    """Run the knock's query, waiting out the endpoint's rate limit a few times before giving up.
+
+    A comment carrying a nonce is appended so that the endpoint's cache cannot answer for the query: the mirror
+    keeps a cancelled answer for a day, and would serve it for every later run.
+    """
+    query = knock.query + f"# {secrets.token_hex(8)}\n"
+    attempts = 0
+    while True:
+        try:
+            return client.execute(query, expect=knock.form)
+        except SparqlHttpError as error:
+            attempts += 1
+            if error.status != HTTPStatus.TOO_MANY_REQUESTS or attempts == RATE_LIMIT_RETRIES:
+                raise
+            time.sleep(RATE_LIMIT_PAUSE)
+
+
+def solve(knock: Knock, client: SparqlClient) -> Outcome:
     """Throw one knock and check its answer."""
     start = time.perf_counter()
-    async with gate:
-        try:
-            result = await client.execute(knock.query, expect=knock.form)
-        except (RqwError, httpx.HTTPError) as error:
-            elapsed = time.perf_counter() - start
-            status = Status.XFAIL if knock.xfail else Status.FAIL
-            return Outcome(knock=knock, status=status, detail=_reason(error), seconds=elapsed)
+    try:
+        result = throw(client, knock)
+    except (RqwError, httpx.HTTPError) as error:
+        elapsed = time.perf_counter() - start
+        status = Status.XFAIL if knock.xfail else Status.FAIL
+        return Outcome(knock=knock, status=status, detail=_reason(error), seconds=elapsed)
     elapsed = time.perf_counter() - start
 
     size, detail = _summarize(result)
     if knock.check is not None and (complaint := knock.check(knock, result)):
         return Outcome(knock=knock, status=Status.FAIL, detail=complaint, seconds=elapsed)
+    if not size and not knock.allow_empty:
+        status = Status.XFAIL if knock.xfail else Status.EMPTY
+        return Outcome(knock=knock, status=status, detail=detail, seconds=elapsed)
     if knock.xfail:
         return Outcome(knock=knock, status=Status.XPASS, detail=f"{detail} (was supposed to fail)", seconds=elapsed)
-    if not size and not knock.allow_empty:
-        return Outcome(knock=knock, status=Status.EMPTY, detail=detail, seconds=elapsed)
     return Outcome(knock=knock, status=Status.OK, detail=detail, seconds=elapsed)
 
 
@@ -137,22 +161,18 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         "numbers", nargs="*", metavar="N|N-M", help="numbers of the knocks to run (default: all of them)"
     )
     parser.add_argument(
-        "-e",
-        "--endpoint",
-        default=DBPEDIA_JA,
-        metavar="URI",
-        help=f"endpoint to use instead of DBpedia Japanese (default: {DBPEDIA_JA})",
-    )
-    parser.add_argument("-c", "--concurrency", type=int, default=4, help="how many to throw at once (default: 4)")
-    parser.add_argument(
         "-t", "--timeout", type=float, default=120.0, help="time limit per knock (seconds, default: 120)"
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="print the query text too")
     return parser.parse_args(argv)
 
 
-async def main(argv: Sequence[str] | None = None) -> int:
-    """Throw the 50 knocks concurrently and print how each one came out."""
+def main(argv: Sequence[str] | None = None) -> int:
+    """Throw the 50 knocks one after another and print how each one came out.
+
+    One at a time, because the mirror's 20 second limit is wall-clock: knocks thrown together slow one another
+    down and push each other over it.
+    """
     args = _parse_args(argv)
     wanted = _numbers(args.numbers)
     knocks = [knock for knock in KNOCKS if not wanted or knock.no in wanted]
@@ -160,23 +180,20 @@ async def main(argv: Sequence[str] | None = None) -> int:
         print("no knock matches")
         return 2
 
-    endpoints = {knock.no: args.endpoint if knock.endpoint == DBPEDIA_JA else knock.endpoint for knock in knocks}
-    gate = asyncio.Semaphore(args.concurrency)
     outcomes: list[Outcome] = []
-    async with AsyncExitStack() as stack:
+    with ExitStack() as stack:
         clients = {
-            endpoint: await stack.enter_async_context(AsyncSparqlClient(endpoint, timeout=args.timeout))
-            for endpoint in sorted(set(endpoints.values()))
+            endpoint: stack.enter_context(SparqlClient(endpoint, timeout=args.timeout))
+            for endpoint in sorted({knock.endpoint for knock in knocks})
         }
-        tasks = [asyncio.create_task(solve(knock, clients[endpoints[knock.no]], gate)) for knock in knocks]
-        for task in asyncio.as_completed(tasks):
-            outcome = await task
+        for knock in knocks:
+            outcome = solve(knock, clients[knock.endpoint])
             outcomes.append(outcome)
             print(_line(outcome, verbose=args.verbose), flush=True)
 
-    _report(sorted(outcomes, key=lambda outcome: outcome.knock.no))
+    _report(outcomes)
     return 0 if all(outcome.status.passed for outcome in outcomes) else 1
 
 
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main()))
+    sys.exit(main())
