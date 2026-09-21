@@ -16,7 +16,7 @@ from argparse import (
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
-import httpx
+import httpx2
 
 from . import __version__
 from .client import SparqlClient
@@ -177,9 +177,9 @@ def main(args: list[str] | None = None) -> None:
         warnings.simplefilter("ignore")
     auth = None
     if parsed.auth == "DIGEST":
-        auth = httpx.DigestAuth(parsed.username, parsed.password)
+        auth = httpx2.DigestAuth(parsed.username, parsed.password)
     elif parsed.auth == "BASIC":
-        auth = httpx.BasicAuth(parsed.username, parsed.password)
+        auth = httpx2.BasicAuth(parsed.username, parsed.password)
 
     try:
         with SparqlClient(
@@ -195,7 +195,7 @@ def main(args: list[str] | None = None) -> None:
             auth=auth,
         ) as client:
             print(_render(client, parsed))
-    except (RqwError, httpx.HTTPError) as exc:
+    except (RqwError, httpx2.HTTPError) as exc:
         print(f"rqw: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 

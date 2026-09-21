@@ -12,7 +12,7 @@ from enum import Enum
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 
-import httpx
+import httpx2
 from knocks import KNOCKS, Knock
 
 from rqw import (
@@ -109,7 +109,7 @@ def solve(knock: Knock, client: SparqlClient) -> Outcome:
     start = time.perf_counter()
     try:
         result = throw(client, knock)
-    except (RqwError, httpx.HTTPError) as error:
+    except (RqwError, httpx2.HTTPError) as error:
         elapsed = time.perf_counter() - start
         status = Status.XFAIL if knock.xfail else Status.FAIL
         return Outcome(knock=knock, status=status, detail=_reason(error), seconds=elapsed)

@@ -1,7 +1,7 @@
 """The SPARQL 1.1 Protocol: query forms, result formats and request shaping.
 
 Everything in here is pure: it turns a configuration plus a query string into a
-`RequestSpec`, which `rqw.client` then hands to `httpx`. Keeping it free of I/O
+`RequestSpec`, which `rqw.client` then hands to `httpx2`. Keeping it free of I/O
 is what lets the sync and the async client share one implementation.
 """
 

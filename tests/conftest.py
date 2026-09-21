@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 import pytest
 
 if TYPE_CHECKING:
@@ -24,25 +24,25 @@ class Recorder:
     """Captures every request a client sends and replays a canned response."""
 
     def __init__(self) -> None:
-        self.requests: list[httpx.Request] = []
-        self.respond: Callable[[httpx.Request], httpx.Response] = lambda _: httpx.Response(
+        self.requests: list[httpx2.Request] = []
+        self.respond: Callable[[httpx2.Request], httpx2.Response] = lambda _: httpx2.Response(
             200,
             content=SELECT_JSON,
             headers={"content-type": "application/sparql-results+json"},
         )
 
-    def handle(self, request: httpx.Request) -> httpx.Response:
+    def handle(self, request: httpx2.Request) -> httpx2.Response:
         request.read()
         self.requests.append(request)
         return self.respond(request)
 
     @property
-    def last(self) -> httpx.Request:
+    def last(self) -> httpx2.Request:
         return self.requests[-1]
 
     def reply(self, *, status: int = 200, content: bytes = b"", content_type: str = "text/plain") -> None:
-        def respond(_: httpx.Request) -> httpx.Response:
-            return httpx.Response(status, content=content, headers={"content-type": content_type})
+        def respond(_: httpx2.Request) -> httpx2.Response:
+            return httpx2.Response(status, content=content, headers={"content-type": content_type})
 
         self.respond = respond
 
@@ -53,14 +53,14 @@ def recorder() -> Recorder:
 
 
 @pytest.fixture
-def sync_client(recorder: Recorder) -> Iterator[httpx.Client]:
-    with httpx.Client(transport=httpx.MockTransport(recorder.handle)) as client:
+def sync_client(recorder: Recorder) -> Iterator[httpx2.Client]:
+    with httpx2.Client(transport=httpx2.MockTransport(recorder.handle)) as client:
         yield client
 
 
 @pytest.fixture
-def async_client(recorder: Recorder) -> httpx.AsyncClient:
-    return httpx.AsyncClient(transport=httpx.MockTransport(recorder.handle))
+def async_client(recorder: Recorder) -> httpx2.AsyncClient:
+    return httpx2.AsyncClient(transport=httpx2.MockTransport(recorder.handle))
 
 
 @pytest.fixture

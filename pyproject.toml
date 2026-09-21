@@ -26,7 +26,7 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
-  "httpx>=0.28.1",
+  "httpx2>=2.13",
 ]
 urls.Documentation = "https://eggplants.github.io/rqw/"
 urls.Issues = "https://github.com/eggplants/rqw/issues"

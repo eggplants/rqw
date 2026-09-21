@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Final, Literal, Self, cast, overload
 
-import httpx
+import httpx2
 
 from . import __version__
 from .exceptions import QueryFormError, raise_for_status
@@ -41,10 +41,10 @@ USER_AGENT: Final = f"rqw/{__version__} (+https://github.com/eggplants/rqw)"
 """Default `User-Agent`; endpoints use it for rate limiting, so keep it honest."""
 
 
-class _BaseClient[C: (httpx.Client, httpx.AsyncClient)]:
+class _BaseClient[C: (httpx2.Client, httpx2.AsyncClient)]:
     """Configuration and request shaping shared by both clients."""
 
-    _factory: type[httpx.Client | httpx.AsyncClient] = httpx.Client
+    _factory: type[httpx2.Client | httpx2.AsyncClient] = httpx2.Client
 
     def __init__(
         self,
@@ -60,7 +60,7 @@ class _BaseClient[C: (httpx.Client, httpx.AsyncClient)]:
         timeout: float | None = 30.0,
         user_agent: str = USER_AGENT,
         headers: Mapping[str, str] | None = None,
-        auth: httpx.Auth | tuple[str, str] | None = None,
+        auth: httpx2.Auth | tuple[str, str] | None = None,
         client: C | None = None,
     ) -> None:
         """Configure a client.
@@ -78,9 +78,9 @@ class _BaseClient[C: (httpx.Client, httpx.AsyncClient)]:
             timeout: Per-request timeout in seconds, `None` to wait forever.
             user_agent: Value of the `User-Agent` header.
             headers: Extra headers sent with every request.
-            auth: Credentials, either an `httpx.Auth` or a `(user, password)` pair
+            auth: Credentials, either an `httpx2.Auth` or a `(user, password)` pair
                 for HTTP Basic.
-            client: An `httpx` client to send through. When given, its own
+            client: An `httpx2` client to send through. When given, its own
                 timeout and auth settings win and closing it stays your job.
         """
         self._config = EndpointConfig(
@@ -121,7 +121,7 @@ class _BaseClient[C: (httpx.Client, httpx.AsyncClient)]:
         chosen = choose_format(parsed.form, result_format, raw=raw)
         return parsed, chosen, build_request(self._config, parsed.text, parsed.form, ACCEPT[chosen])
 
-    def _request(self, spec: RequestSpec) -> httpx.Request:
+    def _request(self, spec: RequestSpec) -> httpx2.Request:
         return self._client.build_request(
             spec.method,
             spec.url,
@@ -131,7 +131,7 @@ class _BaseClient[C: (httpx.Client, httpx.AsyncClient)]:
         )
 
 
-class SparqlClient(_BaseClient[httpx.Client]):
+class SparqlClient(_BaseClient[httpx2.Client]):
     """A SPARQL endpoint, queried synchronously.
 
     The underlying connection is pooled and kept alive, so reusing one client
@@ -148,7 +148,7 @@ class SparqlClient(_BaseClient[httpx.Client]):
         ...                 print(row["s"])
     """
 
-    _factory = httpx.Client
+    _factory = httpx2.Client
 
     def __enter__(self) -> Self:
         """Enter a context that closes the client on the way out."""
@@ -163,7 +163,7 @@ class SparqlClient(_BaseClient[httpx.Client]):
         if self._owns_client:
             self._client.close()
 
-    def _send(self, spec: RequestSpec) -> httpx.Response:
+    def _send(self, spec: RequestSpec) -> httpx2.Response:
         response = self._client.send(self._request(spec))
         raise_for_status(response.status_code, str(response.url), response.content)
         return response
@@ -292,7 +292,7 @@ class SparqlClient(_BaseClient[httpx.Client]):
         return body if raw else interpret(parsed.form, body, response.status_code)
 
 
-class AsyncSparqlClient(_BaseClient[httpx.AsyncClient]):
+class AsyncSparqlClient(_BaseClient[httpx2.AsyncClient]):
     """A SPARQL endpoint, queried with `asyncio`.
 
     Same surface as `SparqlClient`, with `execute` awaitable. Running independent
@@ -304,7 +304,7 @@ class AsyncSparqlClient(_BaseClient[httpx.AsyncClient]):
         ...     result = await sparql.execute("SELECT ?s WHERE { ?s ?p ?o } LIMIT 10")
     """
 
-    _factory = httpx.AsyncClient
+    _factory = httpx2.AsyncClient
 
     async def __aenter__(self) -> Self:
         """Enter a context that closes the client on the way out."""
@@ -319,7 +319,7 @@ class AsyncSparqlClient(_BaseClient[httpx.AsyncClient]):
         if self._owns_client:
             await self._client.aclose()
 
-    async def _send(self, spec: RequestSpec) -> httpx.Response:
+    async def _send(self, spec: RequestSpec) -> httpx2.Response:
         response = await self._client.send(self._request(spec))
         raise_for_status(response.status_code, str(response.url), response.content)
         return response
