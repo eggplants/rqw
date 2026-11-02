@@ -954,7 +954,7 @@ stays your job.</p>
                 <section id="USER_AGENT">
                     <div class="attr variable">
             <span class="name">USER_AGENT</span>        =
-<span class="default_value">&#39;rqw/0.0.0-post.1+0ee5846 (+https://github.com/eggplants/rqw)&#39;</span>
+<span class="default_value">&#39;rqw/0.0.0-post.1+589554a (+https://github.com/eggplants/rqw)&#39;</span>
 
         
     </div>
@@ -1232,7 +1232,7 @@ batch of results, since they share the connection pool.</p>
 <div class="attr function">
             
         <span class="def">async def</span>
-        <span class="name">execute</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">query</span><span class="p">:</span> <span class="n">QuerySource</span>,</span><span class="param">	<span class="o">*</span>,</span><span class="param">	<span class="n">expect</span><span class="p">:</span> <span class="n"><a href="#QueryForm">QueryForm</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">result_format</span><span class="p">:</span> <span class="n">ResultFormat</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">raw</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n">QueryResult</span> <span class="o">|</span> <span class="n"><a href="#RawResult">RawResult</a></span><span class="p">[</span><span class="n">ResultFormat</span><span class="p">]</span>:</span></span>
+        <span class="name">execute</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">query</span><span class="p">:</span> <span class="n">QuerySource</span>,</span><span class="param">	<span class="o">*</span>,</span><span class="param">	<span class="n">expect</span><span class="p">:</span> <span class="n"><a href="#QueryForm">QueryForm</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">result_format</span><span class="p">:</span> <span class="n"><a href="#ResultFormat">ResultFormat</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">raw</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n"><a href="#QueryResult">QueryResult</a></span> <span class="o">|</span> <span class="n"><a href="#RawResult">RawResult</a></span><span class="p">[</span><span class="n">ResultFormat</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="AsyncSparqlClient.execute-view-source"><span>View Source</span></label>
 
@@ -2761,7 +2761,7 @@ when the problem is not tied to one spot.</li>
                 <section id="Row">
                     <div class="attr variable">
             <span class="def">type</span> <span class="name">Row</span>        =
-<span class="default_value">Mapping[str, Term]</span>
+<span class="default_value">Mapping[str, <a href="#Term">Term</a>]</span>
 
         
     </div>
@@ -2809,7 +2809,7 @@ when the problem is not tied to one spot.</li>
                     <div class="decorator decorator-dataclass">@dataclass(frozen=True, slots=True)</div>
 
     <span class="def">class</span>
-    <span class="name">SelectResult</span><wbr>(<span class="base">collections.abc.Sequence[Row]</span>):
+    <span class="name">SelectResult</span><wbr>(<span class="base">collections.abc.Sequence[rqw.results.Row]</span>):
 
                 <label class="view-source-button" for="SelectResult-view-source"><span>View Source</span></label>
 
@@ -2866,7 +2866,7 @@ when the problem is not tied to one spot.</li>
                             <div id="SelectResult.__init__" class="classattr">
                                 <div class="attr function">
             
-        <span class="name">SelectResult</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">variables</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>, </span><span class="param"><span class="n">rows</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Row</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span></span>)</span>
+        <span class="name">SelectResult</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">variables</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>, </span><span class="param"><span class="n">rows</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n"><a href="#Row">Row</a></span><span class="p">,</span> <span class="o">...</span><span class="p">]</span></span>)</span>
 
         
     </div>
@@ -2890,7 +2890,7 @@ when the problem is not tied to one spot.</li>
                             </div>
                             <div id="SelectResult.rows" class="classattr">
                                 <div class="attr variable">
-            <span class="name">rows</span><span class="annotation">: tuple[Row, ...]</span>
+            <span class="name">rows</span><span class="annotation">: tuple[<a href="#Row">Row</a>, ...]</span>
 
         
     </div>
@@ -2906,7 +2906,7 @@ when the problem is not tied to one spot.</li>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">column</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">variable</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">tuple</span><span class="p">[</span><span class="n">Term</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>:</span></span>
+        <span class="name">column</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">variable</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">tuple</span><span class="p">[</span><span class="n"><a href="#Term">Term</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="SelectResult.column-view-source"><span>View Source</span></label>
 
@@ -3252,7 +3252,7 @@ and answers with the result type that form calls for.</p>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">execute</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">query</span><span class="p">:</span> <span class="n">QuerySource</span>,</span><span class="param">	<span class="o">*</span>,</span><span class="param">	<span class="n">expect</span><span class="p">:</span> <span class="n"><a href="#QueryForm">QueryForm</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">result_format</span><span class="p">:</span> <span class="n">ResultFormat</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">raw</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n">QueryResult</span> <span class="o">|</span> <span class="n"><a href="#RawResult">RawResult</a></span><span class="p">[</span><span class="n">ResultFormat</span><span class="p">]</span>:</span></span>
+        <span class="name">execute</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">query</span><span class="p">:</span> <span class="n">QuerySource</span>,</span><span class="param">	<span class="o">*</span>,</span><span class="param">	<span class="n">expect</span><span class="p">:</span> <span class="n"><a href="#QueryForm">QueryForm</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">result_format</span><span class="p">:</span> <span class="n"><a href="#ResultFormat">ResultFormat</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">raw</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n"><a href="#QueryResult">QueryResult</a></span> <span class="o">|</span> <span class="n"><a href="#RawResult">RawResult</a></span><span class="p">[</span><span class="n">ResultFormat</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="SparqlClient.execute-view-source"><span>View Source</span></label>
 
@@ -4022,7 +4022,7 @@ error of a malformed query in there.</li>
                 <section id="__version__">
                     <div class="attr variable">
             <span class="name">__version__</span>        =
-<span class="default_value">&#39;0.0.0-post.1+0ee5846&#39;</span>
+<span class="default_value">&#39;0.0.0-post.1+589554a&#39;</span>
 
         
     </div>
